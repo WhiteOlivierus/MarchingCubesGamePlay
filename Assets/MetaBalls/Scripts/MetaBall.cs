@@ -1,14 +1,14 @@
 ﻿using UnityEngine;
 
-public class MetaBall : MonoBehaviour
+namespace MetaBall
 {
-    public float radius;
-    public bool negativeBall;
-
-    public float Factor { get; set; }
-
-    public virtual void Start()
+    public class MetaBall : MonoBehaviour
     {
-        Factor = (negativeBall ? -1 : 1) * (radius * 2);
+        public float radius;
+        public bool negativeBall;
+
+        public float Factor { get; set; }
+
+        public virtual void Start() => Factor = (negativeBall ? -1 : 1) * radius * radius;
     }
 }

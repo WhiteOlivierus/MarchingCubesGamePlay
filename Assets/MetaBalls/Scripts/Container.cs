@@ -1,29 +1,32 @@
 ﻿using UnityEngine;
 
-public class Container : MonoBehaviour
+namespace MetaBall
 {
-    public float safeZone;
-    public float resolution;
-    public float threshold;
-    public ComputeShader computeShader;
-    public bool calculateNormals;
-
-    private CubeGrid grid;
-
-    public void Start() => grid = new CubeGrid(this, computeShader);
-
-    public void Update()
+    public class Container : MonoBehaviour
     {
-        grid.evaluateAll(GetComponentsInChildren<MetaBall>());
+        public float safeZone;
+        public float resolution;
+        public float threshold;
+        public ComputeShader computeShader;
+        public bool calculateNormals;
 
-        Mesh mesh = GetComponent<MeshFilter>().mesh;
-        mesh.Clear();
-        mesh.vertices = grid.vertices.ToArray();
-        mesh.triangles = grid.getTriangles();
+        private CubeGrid grid;
 
-        if (calculateNormals)
+        public void Start() => grid = new CubeGrid(this, computeShader);
+
+        public void Update()
         {
-            mesh.RecalculateNormals();
+            grid.EvaluateAll(GetComponentsInChildren<MetaBall>());
+
+            Mesh mesh = GetComponent<MeshFilter>().mesh;
+            mesh.Clear();
+            mesh.vertices = grid.vertices.ToArray();
+            mesh.triangles = grid.GetTriangles();
+
+            if (calculateNormals)
+            {
+                mesh.RecalculateNormals();
+            }
         }
     }
 }

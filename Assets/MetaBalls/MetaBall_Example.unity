@@ -245,8 +245,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19661b331d4afbb4b88ebebaed28c66b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  safeZone: 0.1
-  resolution: 0.02
+  safeZone: 0.01
+  resolution: 0.051
   threshold: 1
   computeShader: {fileID: 7200000, guid: 9bcc9560470e2b4439e048851b4c0470, type: 3}
   calculateNormals: 1
@@ -357,9 +357,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d48da6326ea96f42bdc7e5971aca19a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 0.1
+  radius: 0.2
   negativeBall: 0
-  factor: 0
   speed: 0.3
 --- !u!1 &909959525
 GameObject:
@@ -530,7 +529,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   radius: 0.1
   negativeBall: 1
-  factor: 0
   speed: 0.35
 --- !u!1 &1427553063
 GameObject:
@@ -575,9 +573,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d48da6326ea96f42bdc7e5971aca19a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 0.2
+  radius: 0.3
   negativeBall: 0
-  factor: 0
   speed: 0.2
 --- !u!1 &1748234346
 GameObject:
