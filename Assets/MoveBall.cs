@@ -4,7 +4,7 @@ public class MoveBall : MonoBehaviour
 {
     public MeshGenerator meshGenerator;
 
-    private void Update()
+    private void FixedUpdate()
     {
         meshGenerator.offset = GetMouseWorldspace();
         meshGenerator.RequestMeshUpdate();
@@ -12,7 +12,7 @@ public class MoveBall : MonoBehaviour
 
     private Vector3 GetMouseWorldspace()
     {
-        var v3 = Input.mousePosition;
+        Vector3 v3 = Input.mousePosition;
         v3.z = 10f;
         v3 = Camera.main.ScreenToWorldPoint(v3);
         v3.z = 0f;
