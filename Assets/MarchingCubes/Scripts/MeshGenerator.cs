@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[ExecuteInEditMode]
+//[ExecuteInEditMode]
 public partial class MeshGenerator : MonoBehaviour
 {
     const int THREADGROUPSIZE = 8;
@@ -47,12 +47,12 @@ public partial class MeshGenerator : MonoBehaviour
     ComputeBuffer pointsBuffer;
     ComputeBuffer triCountBuffer;
 
-    bool settingsUpdated;
+    //bool settingsUpdated;
 
     private void Awake()
     {
-        if (!Application.isPlaying || fixedMapSize)
-            return;
+        //if (!Application.isPlaying || fixedMapSize)
+        //    return;
 
         InitVariableChunkStructures();
     }
@@ -60,30 +60,30 @@ public partial class MeshGenerator : MonoBehaviour
     private void Update()
     {
         // Update endless terrain
-        if ((Application.isPlaying && !fixedMapSize))
-            Run();
+        //if ((Application.isPlaying && !fixedMapSize))
+        //    Run();
 
-        if (settingsUpdated)
-        {
-            RequestMeshUpdate();
-            settingsUpdated = false;
-        }
+        //if (settingsUpdated)
+        //{
+        //    RequestMeshUpdate();
+        //    settingsUpdated = false;
+        //}
     }
 
     public void Run()
     {
         CreateBuffers();
 
-        if (fixedMapSize)
-        {
-            InitChunks();
-            UpdateAllChunks();
-        }
-        else
-        {
-            if (Application.isPlaying)
-                InitVisibleChunks();
-        }
+        //if (fixedMapSize)
+        //{
+        InitChunks();
+        UpdateAllChunks();
+        //}
+        //else
+        //{
+        //    if (Application.isPlaying)
+        //        InitVisibleChunks();
+        //}
 
         if (Application.isPlaying)
             return;
@@ -113,9 +113,11 @@ public partial class MeshGenerator : MonoBehaviour
 
         CreateChunkHolder();
 
-        Vector3 p = viewer.position;
-        Vector3 ps = p / boundsSize;
-        Vector3Int viewerCoord = new Vector3Int(Mathf.RoundToInt(ps.x), Mathf.RoundToInt(ps.y), Mathf.RoundToInt(ps.z));
+        Vector3 viewerPosition = viewer.position;
+        Vector3 ps = viewerPosition / boundsSize;
+        Vector3Int viewerCoord = new Vector3Int(Mathf.RoundToInt(ps.x),
+                                                Mathf.RoundToInt(ps.y),
+                                                Mathf.RoundToInt(ps.z));
 
         int maxChunksInView = Mathf.CeilToInt(viewDistance / boundsSize);
         float sqrViewDistance = viewDistance * viewDistance;
@@ -124,10 +126,20 @@ public partial class MeshGenerator : MonoBehaviour
         for (int i = chunks.Count - 1; i >= 0; i--)
         {
             Chunk chunk = chunks[i];
+
             Vector3 centre = CentreFromCoord(chunk.coord);
-            Vector3 viewerOffset = p - centre;
-            Vector3 o = new Vector3(Mathf.Abs(viewerOffset.x), Mathf.Abs(viewerOffset.y), Mathf.Abs(viewerOffset.z)) - Vector3.one * boundsSize / 2;
-            float sqrDst = new Vector3(Mathf.Max(o.x, 0), Mathf.Max(o.y, 0), Mathf.Max(o.z, 0)).sqrMagnitude;
+            Vector3 viewerOffset = viewerPosition - centre;
+
+            Vector3 o = new Vector3(
+                Mathf.Abs(viewerOffset.x),
+                Mathf.Abs(viewerOffset.y),
+                Mathf.Abs(viewerOffset.z));
+
+            o -= Vector3.one * boundsSize / 2;
+
+            float sqrDst = new Vector3(Mathf.Max(o.x, 0),
+                                       Mathf.Max(o.y, 0),
+                                       Mathf.Max(o.z, 0)).sqrMagnitude;
 
             if (sqrDst <= sqrViewDistance)
                 continue;
@@ -140,7 +152,7 @@ public partial class MeshGenerator : MonoBehaviour
         for (int x = -maxChunksInView; x <= maxChunksInView; x++)
             for (int y = -maxChunksInView; y <= maxChunksInView; y++)
                 for (int z = -maxChunksInView; z <= maxChunksInView; z++)
-                    if (!UpdateChunk(p, viewerCoord, sqrViewDistance, new Vector3Int(x, y, z)))
+                    if (!UpdateChunk(viewerPosition, viewerCoord, sqrViewDistance, new Vector3Int(x, y, z)))
                         continue;
     }
 
@@ -175,7 +187,7 @@ public partial class MeshGenerator : MonoBehaviour
         }
         else
         {
-            Chunk chunk = CreateChunk(coord);
+            Chunk chunk = InnitChunk(coord);
             chunk.coord = coord;
             chunk.SetUp(mat, generateColliders);
             existingChunks.Add(coord, chunk);
@@ -198,8 +210,7 @@ public partial class MeshGenerator : MonoBehaviour
         int numThreadsPerAxis = Mathf.CeilToInt(numVoxelsPerAxis / (float)THREADGROUPSIZE);
         float pointSpacing = boundsSize / (numPointsPerAxis - 1);
 
-        Vector3Int coord = chunk.coord;
-        Vector3 centre = CentreFromCoord(coord);
+        Vector3 centre = CentreFromCoord(chunk.coord);
 
         Vector3 worldBounds = new Vector3(numChunks.x, numChunks.y, numChunks.z) * boundsSize;
 
@@ -224,10 +235,14 @@ public partial class MeshGenerator : MonoBehaviour
         triangleBuffer.GetData(tris, 0, 0, numTris);
 
         Mesh mesh = chunk.mesh;
+
+        if (mesh == null)
+            return;
+
         mesh.Clear();
 
-        var vertices = new Vector3[numTris * 3];
-        var meshTriangles = new int[numTris * 3];
+        Vector3[] vertices = new Vector3[numTris * 3];
+        int[] meshTriangles = new int[numTris * 3];
 
         for (int i = 0; i < numTris; i++)
             for (int k = 0; k < 3; k++)
@@ -239,40 +254,7 @@ public partial class MeshGenerator : MonoBehaviour
         mesh.vertices = vertices;
         mesh.triangles = meshTriangles;
 
-        //CalculateNormals(mesh);
-        //mesh.RecalculateNormals();
         NormalSolver.RecalculateNormals(mesh, 90);
-    }
-
-    private void CalculateNormals(Mesh mesh)
-    {
-        Vector3[] normals = new Vector3[mesh.vertices.Length];
-        List<Vector3>[] vertexNormals = new List<Vector3>[mesh.vertices.Length];
-        for (int i = 0; i < vertexNormals.Length; i++)
-        {
-            vertexNormals[i] = new List<Vector3>();
-        }
-        for (int i = 0; i < mesh.triangles.Length; i += 3)
-        {
-            Vector3 currNormal = Vector3.Cross(
-                (mesh.vertices[mesh.triangles[i + 1]] - mesh.vertices[mesh.triangles[i]]).normalized,
-                (mesh.vertices[mesh.triangles[i + 2]] - mesh.vertices[mesh.triangles[i]]).normalized);
-
-            vertexNormals[mesh.triangles[i]].Add(currNormal);
-            vertexNormals[mesh.triangles[i + 1]].Add(currNormal);
-            vertexNormals[mesh.triangles[i + 2]].Add(currNormal);
-        }
-        for (int i = 0; i < vertexNormals.Length; i++)
-        {
-            normals[i] = Vector3.zero;
-            float numNormals = vertexNormals[i].Count;
-            for (int j = 0; j < numNormals; j++)
-            {
-                normals[i] += vertexNormals[i][j];
-            }
-            normals[i] /= numNormals;
-        }
-        mesh.normals = normals;
     }
 
     public void UpdateAllChunks()
@@ -346,49 +328,46 @@ public partial class MeshGenerator : MonoBehaviour
     private void InitChunks()
     {
         CreateChunkHolder();
-        chunks = new List<Chunk>();
+
         List<Chunk> oldChunks = new List<Chunk>(FindObjectsOfType<Chunk>());
+
+        chunks = new List<Chunk>();
 
         // Go through all coords and create a chunk there if one doesn't already exist
         for (int x = 0; x < numChunks.x; x++)
-        {
             for (int y = 0; y < numChunks.y; y++)
-            {
                 for (int z = 0; z < numChunks.z; z++)
-                {
-                    Vector3Int coord = new Vector3Int(x, y, z);
-                    bool chunkAlreadyExists = false;
-
-                    // If chunk already exists, add it to the chunks list, and remove from the old list.
-                    for (int i = 0; i < oldChunks.Count; i++)
-                    {
-                        if (oldChunks[i].coord != coord)
-                            continue;
-
-                        chunks.Add(oldChunks[i]);
-                        oldChunks.RemoveAt(i);
-                        chunkAlreadyExists = true;
-                        break;
-                    }
-
-                    // Create new chunk
-                    if (!chunkAlreadyExists)
-                    {
-                        var newChunk = CreateChunk(coord);
-                        chunks.Add(newChunk);
-                    }
-
-                    chunks[chunks.Count - 1].SetUp(mat, generateColliders);
-                }
-            }
-        }
+                    ValidateChunks(oldChunks, new Vector3Int(x, y, z));
 
         // Delete all unused chunks
         for (int i = 0; i < oldChunks.Count; i++)
             oldChunks[i].DestroyOrDisable();
     }
 
-    private Chunk CreateChunk(Vector3Int coord)
+    private void ValidateChunks(List<Chunk> oldChunks, Vector3Int coord)
+    {
+        //bool chunkAlreadyExists = false;
+
+        // If chunk already exists, add it to the chunks list, and remove from the old list.
+        for (int i = 0; i < oldChunks.Count; i++)
+        {
+            if (oldChunks[i].coord != coord)
+                continue;
+
+            chunks.Add(oldChunks[i]);
+            oldChunks.RemoveAt(i);
+            //chunkAlreadyExists = true;
+            break;
+        }
+
+        // Create new chunk
+        //if (!chunkAlreadyExists)
+        //    chunks.Add(InnitChunk(coord));
+        if (chunks.Count != 0)
+            chunks[chunks.Count - 1].SetUp(mat, generateColliders);
+    }
+
+    private Chunk InnitChunk(Vector3Int coord)
     {
         GameObject chunk = new GameObject($"Chunk ({coord.x}, {coord.y}, {coord.z})");
         chunk.transform.parent = chunkHolder.transform;
@@ -397,7 +376,17 @@ public partial class MeshGenerator : MonoBehaviour
         return newChunk;
     }
 
-    private void OnValidate() => settingsUpdated = true;
+    public void CreateChunk(Vector3Int coord)
+    {
+        Chunk chunk = InnitChunk(coord);
+        chunk.coord = coord;
+        chunk.SetUp(mat, generateColliders);
+        existingChunks.Add(coord, chunk);
+        chunks.Add(chunk);
+        UpdateChunkMesh(chunk);
+    }
+
+    //private void OnValidate() => settingsUpdated = true;
 
     private void OnDrawGizmos()
     {

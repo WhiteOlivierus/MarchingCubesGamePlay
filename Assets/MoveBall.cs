@@ -4,10 +4,21 @@ public class MoveBall : MonoBehaviour
 {
     public MeshGenerator meshGenerator;
 
-    private void FixedUpdate()
+    private bool once = false;
+
+    private void Update()
     {
-        meshGenerator.offset = GetMouseWorldspace();
-        meshGenerator.RequestMeshUpdate();
+        if (Input.GetMouseButtonDown(0) && !once)
+        {
+            once = true;
+            meshGenerator.CreateChunk(Vector3Int.zero);
+        }
+
+        if (Input.GetMouseButton(0))
+        {
+            meshGenerator.offset = GetMouseWorldspace();
+            meshGenerator.RequestMeshUpdate();
+        }
     }
 
     private Vector3 GetMouseWorldspace()
