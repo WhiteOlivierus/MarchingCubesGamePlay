@@ -47,7 +47,12 @@ public partial class MeshGenerator : MonoBehaviour
     ComputeBuffer pointsBuffer;
     ComputeBuffer triCountBuffer;
 
-    private void Awake() => InitVariableChunkStructures();
+    private void Awake()
+    {
+        InitVariableChunkStructures();
+        CreateChunkHolder();
+
+    }
 
     public void Run()
     {
@@ -85,6 +90,9 @@ public partial class MeshGenerator : MonoBehaviour
         Vector3 centre = CentreFromCoord(chunk.coord);
 
         Vector3 worldBounds = new Vector3(numChunks.x, numChunks.y, numChunks.z) * boundsSize;
+
+        if (pointsBuffer == null)
+            return;
 
         densityGenerator.Generate(pointsBuffer, numPointsPerAxis, boundsSize, worldBounds, centre, offset, pointSpacing);
 
@@ -211,8 +219,6 @@ public partial class MeshGenerator : MonoBehaviour
     // Create/get references to all chunks
     private void InitChunks()
     {
-        CreateChunkHolder();
-
         List<Chunk> oldChunks = new List<Chunk>(FindObjectsOfType<Chunk>());
 
         chunks = new List<Chunk>();
