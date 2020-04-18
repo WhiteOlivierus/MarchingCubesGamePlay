@@ -11,7 +11,7 @@ Material:
   m_Shader: {fileID: 4800000, guid: 756bac9090102564582875f4c7e30202, type: 3}
   m_ShaderKeywords: _DISABLE_DECALS _DISABLE_SSR _DISPLACEMENT_LOCK_TILING_SCALE
     _HEIGHTMAP _MASKMAP _METALLIC_MAP _NORMALMAP _NORMALMAP_TANGENT_SPACE _NORMAL_MAP
-    _PARALLAX_MAP _TESSELLATION_DISPLACEMENT _VERTEX_DISPLACEMENT_LOCK_OBJECT_SCALE
+    _PARALLAX_MAP _TESSELLATION_DISPLACEMENT _TESSELLATION_PHONG _VERTEX_DISPLACEMENT_LOCK_OBJECT_SCALE
   m_LightmapFlags: 1
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
@@ -273,11 +273,11 @@ Material:
     - _Tess: 4
     - _TessellationBackFaceCullEpsilon: -0.5
     - _TessellationEdgeLength: 60
-    - _TessellationFactor: 15
+    - _TessellationFactor: 64
     - _TessellationFactorMaxDistance: 50
     - _TessellationFactorMinDistance: 20
     - _TessellationFactorTriangleSize: 100
-    - _TessellationMode: 0
+    - _TessellationMode: 1
     - _TessellationShapeFactor: 0.75
     - _TessellationUniform: 5
     - _TexWorldScale: 1
