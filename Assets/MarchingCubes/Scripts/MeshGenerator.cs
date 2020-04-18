@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public partial class MeshGenerator : MonoBehaviour
@@ -127,10 +128,17 @@ public partial class MeshGenerator : MonoBehaviour
                 vertices[i * 3 + k] = tris[i][k];
             }
 
+
         mesh.vertices = vertices;
         mesh.triangles = meshTriangles;
 
+        //if (vertices.Length == 0)
+        //    return;
+
         NormalSolver.RecalculateNormals(mesh, 90);
+
+        Unwrapping.GenerateSecondaryUVSet(mesh);
+        mesh.uv = mesh.uv2;
     }
 
     public void UpdateAllChunks()
