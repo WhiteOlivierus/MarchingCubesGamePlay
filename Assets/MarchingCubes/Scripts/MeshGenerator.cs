@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-//[ExecuteInEditMode]
 public partial class MeshGenerator : MonoBehaviour
 {
     const int THREADGROUPSIZE = 8;
@@ -20,8 +19,10 @@ public partial class MeshGenerator : MonoBehaviour
     [Space()]
     public bool autoUpdateInEditor = true;
     public bool autoUpdateInGame = true;
+
     public ComputeShader shader;
     public Material mat;
+    public PhysicMaterial physicsMat;
     public bool generateColliders;
 
     [Header("Voxel Settings")]
@@ -39,51 +40,20 @@ public partial class MeshGenerator : MonoBehaviour
     GameObject chunkHolder;
     const string CHUNKHOLDERNAME = "Chunks Holder";
     List<Chunk> chunks;
-    Dictionary<Vector3Int, Chunk> existingChunks;
-    Queue<Chunk> recycleableChunks;
 
     // Buffers
     ComputeBuffer triangleBuffer;
     ComputeBuffer pointsBuffer;
     ComputeBuffer triCountBuffer;
 
-    //bool settingsUpdated;
-
-    private void Awake()
-    {
-        //if (!Application.isPlaying || fixedMapSize)
-        //    return;
-
-        InitVariableChunkStructures();
-    }
-
-    private void Update()
-    {
-        // Update endless terrain
-        //if ((Application.isPlaying && !fixedMapSize))
-        //    Run();
-
-        //if (settingsUpdated)
-        //{
-        //    RequestMeshUpdate();
-        //    settingsUpdated = false;
-        //}
-    }
+    private void Awake() => InitVariableChunkStructures();
 
     public void Run()
     {
         CreateBuffers();
 
-        //if (fixedMapSize)
-        //{
         InitChunks();
         UpdateAllChunks();
-        //}
-        //else
-        //{
-        //    if (Application.isPlaying)
-        //        InitVisibleChunks();
-        //}
 
         if (Application.isPlaying)
             return;
@@ -101,107 +71,8 @@ public partial class MeshGenerator : MonoBehaviour
 
     private void InitVariableChunkStructures()
     {
-        recycleableChunks = new Queue<Chunk>();
         chunks = new List<Chunk>();
-        existingChunks = new Dictionary<Vector3Int, Chunk>();
-    }
-
-    private void InitVisibleChunks()
-    {
-        if (chunks == null)
-            return;
-
-        CreateChunkHolder();
-
-        Vector3 viewerPosition = viewer.position;
-        Vector3 ps = viewerPosition / boundsSize;
-        Vector3Int viewerCoord = new Vector3Int(Mathf.RoundToInt(ps.x),
-                                                Mathf.RoundToInt(ps.y),
-                                                Mathf.RoundToInt(ps.z));
-
-        int maxChunksInView = Mathf.CeilToInt(viewDistance / boundsSize);
-        float sqrViewDistance = viewDistance * viewDistance;
-
-        // Go through all existing chunks and flag for recyling if outside of max view dst
-        for (int i = chunks.Count - 1; i >= 0; i--)
-        {
-            Chunk chunk = chunks[i];
-
-            Vector3 centre = CentreFromCoord(chunk.coord);
-            Vector3 viewerOffset = viewerPosition - centre;
-
-            Vector3 o = new Vector3(
-                Mathf.Abs(viewerOffset.x),
-                Mathf.Abs(viewerOffset.y),
-                Mathf.Abs(viewerOffset.z));
-
-            o -= Vector3.one * boundsSize / 2;
-
-            float sqrDst = new Vector3(Mathf.Max(o.x, 0),
-                                       Mathf.Max(o.y, 0),
-                                       Mathf.Max(o.z, 0)).sqrMagnitude;
-
-            if (sqrDst <= sqrViewDistance)
-                continue;
-
-            existingChunks.Remove(chunk.coord);
-            recycleableChunks.Enqueue(chunk);
-            chunks.RemoveAt(i);
-        }
-
-        for (int x = -maxChunksInView; x <= maxChunksInView; x++)
-            for (int y = -maxChunksInView; y <= maxChunksInView; y++)
-                for (int z = -maxChunksInView; z <= maxChunksInView; z++)
-                    if (!UpdateChunk(viewerPosition, viewerCoord, sqrViewDistance, new Vector3Int(x, y, z)))
-                        continue;
-    }
-
-    private bool UpdateChunk(Vector3 p, Vector3Int viewerCoord, float sqrViewDistance, Vector3Int chunkCoord)
-    {
-        Vector3Int coord = chunkCoord + viewerCoord;
-
-        if (existingChunks.ContainsKey(coord))
-            return false;
-
-        Vector3 centre = CentreFromCoord(coord);
-        Vector3 viewerOffset = p - centre;
-        Vector3 o = new Vector3(Mathf.Abs(viewerOffset.x), Mathf.Abs(viewerOffset.y), Mathf.Abs(viewerOffset.z)) - Vector3.one * boundsSize / 2;
-        float sqrDst = new Vector3(Mathf.Max(o.x, 0), Mathf.Max(o.y, 0), Mathf.Max(o.z, 0)).sqrMagnitude;
-
-        // Chunk is within view distance and should be created (if it doesn't already exist)
-        if (sqrDst > sqrViewDistance)
-            return false;
-
-        Bounds bounds = new Bounds(CentreFromCoord(coord), Vector3.one * boundsSize);
-
-        if (!IsVisibleFrom(bounds, Camera.main))
-            return false;
-
-        if (recycleableChunks.Count > 0)
-        {
-            Chunk chunk = recycleableChunks.Dequeue();
-            chunk.coord = coord;
-            existingChunks.Add(coord, chunk);
-            chunks.Add(chunk);
-            UpdateChunkMesh(chunk);
-        }
-        else
-        {
-            Chunk chunk = InnitChunk(coord);
-            chunk.coord = coord;
-            chunk.SetUp(mat, generateColliders);
-            existingChunks.Add(coord, chunk);
-            chunks.Add(chunk);
-            UpdateChunkMesh(chunk);
-        }
-
-        return true;
-    }
-
-    public bool IsVisibleFrom(Bounds bounds, Camera camera)
-    {
-        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
-        return GeometryUtility.TestPlanesAABB(planes, bounds);
+        //existingChunks = new Dictionary<Vector3Int, Chunk>();
     }
 
     public void UpdateChunkMesh(Chunk chunk)
@@ -234,7 +105,12 @@ public partial class MeshGenerator : MonoBehaviour
         Triangle[] tris = new Triangle[numTris];
         triangleBuffer.GetData(tris, 0, 0, numTris);
 
-        Mesh mesh = chunk.mesh;
+        UpdateMesh(chunk, numTris, tris);
+    }
+
+    private static void UpdateMesh(Chunk chunk, int numTris, Triangle[] tris)
+    {
+        Mesh mesh = chunk.Mesh;
 
         if (mesh == null)
             return;
@@ -346,8 +222,6 @@ public partial class MeshGenerator : MonoBehaviour
 
     private void ValidateChunks(List<Chunk> oldChunks, Vector3Int coord)
     {
-        //bool chunkAlreadyExists = false;
-
         // If chunk already exists, add it to the chunks list, and remove from the old list.
         for (int i = 0; i < oldChunks.Count; i++)
         {
@@ -356,15 +230,11 @@ public partial class MeshGenerator : MonoBehaviour
 
             chunks.Add(oldChunks[i]);
             oldChunks.RemoveAt(i);
-            //chunkAlreadyExists = true;
             break;
         }
 
-        // Create new chunk
-        //if (!chunkAlreadyExists)
-        //    chunks.Add(InnitChunk(coord));
         if (chunks.Count != 0)
-            chunks[chunks.Count - 1].SetUp(mat, generateColliders);
+            chunks[chunks.Count - 1].SetUp(mat, physicsMat, generateColliders);
     }
 
     private Chunk InnitChunk(Vector3Int coord)
@@ -376,17 +246,15 @@ public partial class MeshGenerator : MonoBehaviour
         return newChunk;
     }
 
-    public void CreateChunk(Vector3Int coord)
+    public Chunk CreateChunk(Vector3Int coord)
     {
         Chunk chunk = InnitChunk(coord);
         chunk.coord = coord;
-        chunk.SetUp(mat, generateColliders);
-        existingChunks.Add(coord, chunk);
+        chunk.SetUp(mat, physicsMat, generateColliders);
         chunks.Add(chunk);
         UpdateChunkMesh(chunk);
+        return chunk;
     }
-
-    //private void OnValidate() => settingsUpdated = true;
 
     private void OnDrawGizmos()
     {

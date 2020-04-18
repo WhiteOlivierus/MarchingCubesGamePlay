@@ -3,19 +3,18 @@
 public class Chunk : MonoBehaviour
 {
     public Vector3Int coord;
+    private MeshFilter meshFilter;
+    private MeshRenderer meshRenderer;
+    private MeshCollider meshCollider;
+    public Rigidbody meshRigidbody;
 
-    [HideInInspector]
-    public Mesh mesh;
-
-    MeshFilter meshFilter;
-    MeshRenderer meshRenderer;
-    MeshCollider meshCollider;
+    public Mesh Mesh { get; private set; }
 
     public void DestroyOrDisable()
     {
         if (Application.isPlaying)
         {
-            mesh.Clear();
+            Mesh.Clear();
             gameObject.SetActive(false);
             return;
         }
@@ -24,39 +23,51 @@ public class Chunk : MonoBehaviour
     }
 
     // Add components/get references in case lost (references can be lost when working in the editor)
-    public void SetUp(Material mat, bool generateCollider)
+    public void SetUp(Material mat, PhysicMaterial physicsMaterial, bool generateCollider)
     {
-        meshFilter = GetComponent<MeshFilter>();
-        meshRenderer = GetComponent<MeshRenderer>();
-        meshCollider = GetComponent<MeshCollider>();
+        meshFilter = CreateComponent<MeshFilter>();
+        meshRenderer = CreateComponent<MeshRenderer>();
+        meshCollider = CreateComponent<MeshCollider>();
+        meshRigidbody = CreateComponent<Rigidbody>();
 
-        if (meshFilter == null)
-            meshFilter = gameObject.AddComponent<MeshFilter>();
-
-        if (meshRenderer == null)
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-
-        if (meshCollider == null && generateCollider)
-            meshCollider = gameObject.AddComponent<MeshCollider>();
+        if (meshRigidbody != null)
+            meshRigidbody.isKinematic = true;
 
         if (meshCollider != null && !generateCollider)
             DestroyImmediate(meshCollider);
 
-        mesh = meshFilter.sharedMesh;
+        Mesh = meshFilter.sharedMesh;
 
-        if (mesh == null)
+        if (Mesh == null)
             meshFilter.sharedMesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
 
-        if (generateCollider)
-        {
-            if (meshCollider.sharedMesh == null)
-                meshCollider.sharedMesh = mesh;
+        CreatCollider(generateCollider);
 
-            // force update
-            meshCollider.enabled = false;
-            meshCollider.enabled = true;
-        }
-
+        meshCollider.material = physicsMaterial;
         meshRenderer.material = mat;
+    }
+
+    private void CreatCollider(bool generateCollider)
+    {
+        if (!generateCollider)
+            return;
+
+        meshCollider.cookingOptions = MeshColliderCookingOptions.EnableMeshCleaning;
+
+        if (meshCollider.sharedMesh == null)
+            meshCollider.sharedMesh = Mesh;
+
+        meshCollider.convex = true;
+
+        meshCollider.enabled = false;
+        meshCollider.enabled = true;
+    }
+
+    private T CreateComponent<T>() where T : Component
+    {
+        T parameter = gameObject.GetComponent<T>();
+        if (parameter == null)
+            return gameObject.AddComponent<T>();
+        return parameter;
     }
 }

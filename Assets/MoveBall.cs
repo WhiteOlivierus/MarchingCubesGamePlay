@@ -2,22 +2,36 @@
 
 public class MoveBall : MonoBehaviour
 {
+    private const int FORCE = 1000;
+
     public MeshGenerator meshGenerator;
 
-    private bool once = false;
+    private bool ballSelected = false;
+
+    private Chunk chunk;
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0) && !once)
+        if (Input.GetMouseButtonDown(0) && !ballSelected)
         {
-            once = true;
-            meshGenerator.CreateChunk(Vector3Int.zero);
+            ballSelected = true;
+            chunk = meshGenerator.CreateChunk(Vector3Int.zero);
         }
 
         if (Input.GetMouseButton(0))
         {
             meshGenerator.offset = GetMouseWorldspace();
             meshGenerator.RequestMeshUpdate();
+        }
+
+        if (Input.GetMouseButtonUp(0) && ballSelected)
+        {
+            ballSelected = false;
+
+            Vector3 direction = Camera.main.transform.forward;
+
+            chunk.meshRigidbody.isKinematic = false;
+            chunk.meshRigidbody.AddForce(direction * FORCE);
         }
     }
 
