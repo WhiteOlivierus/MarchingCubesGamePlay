@@ -20,6 +20,8 @@ public class NoiseDensity : DensityGenerator
 
     public Vector4 shaderParams;
 
+    protected List<ComputeBuffer> buffersToRelease;
+
     public override ComputeBuffer Generate(ComputeBuffer pointsBuffer, int numPointsPerAxis, float boundsSize, Vector3 worldBounds, Vector3 centre, Vector3 offset, float spacing)
     {
         buffersToRelease = new List<ComputeBuffer>();
@@ -52,6 +54,15 @@ public class NoiseDensity : DensityGenerator
 
         densityShader.SetVector("params", shaderParams);
 
-        return base.Generate(pointsBuffer, numPointsPerAxis, boundsSize, worldBounds, centre, offset, spacing);
+        pointsBuffer = base.Generate(pointsBuffer, numPointsPerAxis, boundsSize, worldBounds, centre, offset, spacing);
+
+        // Return voxel data buffer so it can be used to generate mesh
+        if (buffersToRelease == null)
+            return pointsBuffer;
+
+        foreach (ComputeBuffer buffer in buffersToRelease)
+            buffer.Release();
+
+        return pointsBuffer;
     }
 }

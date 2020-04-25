@@ -1,27 +1,30 @@
 ﻿using UnityEngine;
 
-public class MoveBall : MonoBehaviour
+public class MoveBall : MousePositionInMesh
 {
-    private const int FORCE = 1000;
+    private const int FORCE = 10;
 
     public MeshGenerator meshGenerator;
+    public Chunk chunk;
 
     private bool ballSelected = false;
 
-    private Chunk chunk;
-
     private void Update()
     {
+        chunk.position = transform.position;
+
         if (Input.GetMouseButtonDown(0) && !ballSelected)
         {
+            chunk.CreateObject();
             ballSelected = true;
-            chunk = meshGenerator.CreateChunk(Vector3Int.zero);
         }
 
         if (Input.GetMouseButton(0))
         {
-            meshGenerator.offset = GetMouseWorldspace();
-            meshGenerator.RequestMeshUpdate();
+            chunk.offset = transform.TransformPoint(cursorPosition) - chunk.position;
+            chunk.boundSize = boundsScale;
+
+            meshGenerator.RequestMeshUpdate(chunk);
         }
 
         if (Input.GetMouseButtonUp(0) && ballSelected)
@@ -30,17 +33,10 @@ public class MoveBall : MonoBehaviour
 
             Vector3 direction = Camera.main.transform.forward;
 
+            chunk.ReleaseObject();
+
             chunk.meshRigidbody.isKinematic = false;
             chunk.meshRigidbody.AddForce(direction * FORCE);
         }
-    }
-
-    private Vector3 GetMouseWorldspace()
-    {
-        Vector3 v3 = Input.mousePosition;
-        v3.z = 10f;
-        v3 = Camera.main.ScreenToWorldPoint(v3);
-        v3.z = 0f;
-        return v3 * -1;
     }
 }

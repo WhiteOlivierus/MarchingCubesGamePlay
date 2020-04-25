@@ -6,24 +6,25 @@ public class MousePositionInMesh : MonoBehaviour
     private const float CURSOS_SIZE = .25f;
     private const float CORNER_SIZE = .10f;
 
-    public bool advancedBounds = false;
+    [SerializeField] public bool advancedBounds = false;
 
     [ConditionalHide("advancedBounds", false)]
-    public float boundsScale = 1;
+    [SerializeField] public float boundsScale = 1;
     [ConditionalHide("advancedBounds", true)]
-    public Vector3 boundsDimensions = Vector3.one;
+    [SerializeField] public Vector3 boundsDimensions = Vector3.one;
 
+    [HideInInspector]
     public Vector3 BoundsSize =>
         advancedBounds ? boundsDimensions : boundsScale.ToVector();
 
-    private Vector3 cursorPosition;
+    protected Vector3 cursorPosition;
     private Vector3 positiveCorner;
     private Vector3 negativeCorner;
 
     private CharacterController con;
 
     private void Awake() => con =
-        transform.parent.GetComponent<CharacterController>();
+        transform.GetComponentInParent<CharacterController>();
 
     private void Update()
     {
@@ -54,7 +55,6 @@ public class MousePositionInMesh : MonoBehaviour
         //    transform.GetChild(i).localScale = Vector3.one / 10;
     }
 
-
     private Vector3 UpdateBoundsPosition() =>
         new Vector3(0,
                     (BoundsSize.y / 2) - (con.height / 2),
@@ -68,9 +68,9 @@ public class MousePositionInMesh : MonoBehaviour
         return transform.InverseTransformPoint(vector);
     }
 
-    private void OnDrawGizmos()
+    protected void OnDrawGizmos()
     {
-        con = transform.parent.GetComponent<CharacterController>();
+        con = transform.GetComponentInParent<CharacterController>();
 
         Update();
 

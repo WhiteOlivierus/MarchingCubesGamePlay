@@ -10,7 +10,7 @@ void Density (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    float3 pos = centre + id * spacing - boundsSize/2;
+    float3 pos = center + id * spacing - boundsSize/2;
     float density = radius - length(pos + offset);
 
     int index = indexFromCoord(id.x,id.y,id.z);
