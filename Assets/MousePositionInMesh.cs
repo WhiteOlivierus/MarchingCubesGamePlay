@@ -1,69 +1,86 @@
 ﻿using UnityEngine;
 
+[ExecuteAlways]
 public class MousePositionInMesh : MonoBehaviour
 {
-    public float boundsSize = 1;
+    private const float CURSOS_SIZE = .25f;
+    private const float CORNER_SIZE = .10f;
+
+    public bool advancedBounds = false;
+
+    [ConditionalHide("advancedBounds", false)]
+    public float boundsScale = 1;
+    [ConditionalHide("advancedBounds", true)]
+    public Vector3 boundsDimensions = Vector3.one;
+
+    public Vector3 BoundsSize =>
+        advancedBounds ? boundsDimensions : boundsScale.ToVector();
+
     private Vector3 cursorPosition;
     private Vector3 positiveCorner;
     private Vector3 negativeCorner;
+
     private CharacterController con;
 
-    private void Awake() => con = transform.parent.GetComponent<CharacterController>();
+    private void Awake() => con =
+        transform.parent.GetComponent<CharacterController>();
 
     private void Update()
     {
-        UpdateBounds();
+        UpdateBoundsScale();
 
-        cursorPosition = GetMouseWorldspace(boundsSize);
+        // Update the bounds position
+        transform.localPosition = UpdateBoundsPosition();
+        Vector3 localScale = Vector3.one;
 
-        positiveCorner = CreatePositiveCorner();
-        negativeCorner = CreateNegativeCorner();
+        // Create top-right outer bounds
+        positiveCorner = transform.InverseTransformPoint(transform.position);
+        positiveCorner = positiveCorner.CreateBackTopRightCorner(localScale);
 
+        // Create bottom-left outer bounds
+        negativeCorner = transform.InverseTransformPoint(transform.position);
+        negativeCorner = negativeCorner.CreateFrontBottomLeftCorner(localScale);
+
+        // Calculate the cursor position
+        cursorPosition = GetMouseWorldspace(BoundsSize.z);
         cursorPosition = cursorPosition.Clamp(negativeCorner, positiveCorner);
     }
 
-    private Vector3 CreatePositiveCorner() => new Vector3(transform.position.x + (transform.localScale.x / 2),
-                                               transform.position.y + (transform.localScale.y / 2),
-                                               transform.position.z + (transform.localScale.z / 2));
+    private void UpdateBoundsScale()
+    {
+        transform.localScale = BoundsSize;
 
-    private Vector3 CreateNegativeCorner() => new Vector3(transform.position.x - (transform.localScale.x / 2),
-                                               transform.position.y - (transform.localScale.y / 2),
-                                               transform.position.z - (transform.localScale.z / 2));
+        //for (int i = 0; i < transform.childCount; i++)
+        //    transform.GetChild(i).localScale = Vector3.one / 10;
+    }
+
+
+    private Vector3 UpdateBoundsPosition() =>
+        new Vector3(0,
+                    (BoundsSize.y / 2) - (con.height / 2),
+                    (BoundsSize.z / 2) + con.radius);
 
     private Vector3 GetMouseWorldspace(float boundsSize)
     {
-        Vector3 v3 = Input.mousePosition;
-        v3.z = boundsSize;
-        v3 = Camera.main.ScreenToWorldPoint(v3);
-        v3.z = boundsSize;
-        return v3;
-    }
-
-    private void UpdateBounds()
-    {
-        transform.localScale = Vector3.one * boundsSize;
-        transform.localPosition = new Vector3(0, (boundsSize / 2) - (con.height / 2), (boundsSize / 2) + con.radius);
+        Vector3 vector = Input.mousePosition;
+        vector.z = boundsSize / 2;
+        vector = Camera.main.ScreenToWorldPoint(vector);
+        return transform.InverseTransformPoint(vector);
     }
 
     private void OnDrawGizmos()
     {
         con = transform.parent.GetComponent<CharacterController>();
 
-        UpdateBounds();
-
-        positiveCorner = CreatePositiveCorner();
-        negativeCorner = CreateNegativeCorner();
-
-        Gizmos.color = new Color(1f, 0, 0, 0.5f);
-        Gizmos.DrawCube(transform.position, Vector3.one * boundsSize);
+        Update();
 
         Gizmos.color = new Color(0, 0, 1f, 0.5f);
-        Gizmos.DrawSphere(cursorPosition, .25f);
+        Gizmos.DrawSphere(transform.TransformPoint(cursorPosition), CURSOS_SIZE);
 
         Gizmos.color = new Color(0, 1f, 0, 0.5f);
-        Gizmos.DrawSphere(positiveCorner, .10f);
+        Gizmos.DrawSphere(transform.TransformPoint(positiveCorner), CORNER_SIZE);
 
         Gizmos.color = new Color(0, 1f, 0, 0.5f);
-        Gizmos.DrawSphere(negativeCorner, .10f);
+        Gizmos.DrawSphere(transform.TransformPoint(negativeCorner), CORNER_SIZE);
     }
 }
