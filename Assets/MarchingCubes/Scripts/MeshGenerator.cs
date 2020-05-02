@@ -10,10 +10,6 @@ public partial class MeshGenerator : MonoBehaviour
 
     public ComputeShader shader;
 
-    [Header("Voxel Settings")]
-    public float isoLevel;
-    public Vector3 offset = Vector3.zero;
-
     [Range(2, 100)]
     private int numPointsPerAxis = 10;
 
@@ -42,7 +38,7 @@ public partial class MeshGenerator : MonoBehaviour
                                   numPointsPerAxis,
                                   chunk.boundSize,
                                   chunk.boundSize.ToVector(),
-                                  Vector3.zero,
+                                  chunk.position,
                                   -chunk.offset,
                                   pointSpacing);
 
@@ -50,7 +46,7 @@ public partial class MeshGenerator : MonoBehaviour
         shader.SetBuffer(0, "points", pointsBuffer);
         shader.SetBuffer(0, "triangles", triangleBuffer);
         shader.SetInt("numPointsPerAxis", numPointsPerAxis);
-        shader.SetFloat("isoLevel", isoLevel);
+        shader.SetFloat("isoLevel", 1);
 
         int numThreadsPerAxis = Mathf.CeilToInt(numVoxelsPerAxis / (float)THREADGROUPSIZE);
         shader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
@@ -91,10 +87,10 @@ public partial class MeshGenerator : MonoBehaviour
         if (vertices.Length == 0)
             return;
 
-        NormalSolver.RecalculateNormals(mesh, 90);
+        //NormalSolver.RecalculateNormals(mesh, 90);
 
-        Unwrapping.GenerateSecondaryUVSet(mesh);
-        mesh.uv = mesh.uv2;
+        //Unwrapping.GenerateSecondaryUVSet(mesh);
+        //mesh.uv = mesh.uv2;
 
         chunk.meshFilter.mesh = mesh;
     }
@@ -125,6 +121,4 @@ public partial class MeshGenerator : MonoBehaviour
         pointsBuffer.Release();
         triCountBuffer.Release();
     }
-    private Vector3 CentreFromCoord(Chunk chunk) =>
-        -chunk.boundSize.ToVector() / 2 + chunk.position * chunk.boundSize + Vector3.one * chunk.boundSize / 2;
 }

@@ -2,16 +2,23 @@
 
 public class MoveBall : MousePositionInMesh
 {
-    private const int FORCE = 10;
+    private const int FORCE = 1000;
 
     public MeshGenerator meshGenerator;
     public Chunk chunk;
 
     private bool ballSelected = false;
+    public Vector3 vector;
+
+    private void Awake()
+    {
+        chunk.CreateObject();
+        meshGenerator.transform.parent.position = transform.position;
+    }
 
     private void Update()
     {
-        chunk.position = transform.position;
+        chunk.position = Vector3.zero;
 
         if (Input.GetMouseButtonDown(0) && !ballSelected)
         {
@@ -21,7 +28,8 @@ public class MoveBall : MousePositionInMesh
 
         if (Input.GetMouseButton(0))
         {
-            chunk.offset = transform.TransformPoint(cursorPosition) - chunk.position;
+            //chunk.offset = Vector3.zero;
+            chunk.offset = cursorPosition;
             chunk.boundSize = boundsScale;
 
             meshGenerator.RequestMeshUpdate(chunk);
@@ -40,3 +48,4 @@ public class MoveBall : MousePositionInMesh
         }
     }
 }
+

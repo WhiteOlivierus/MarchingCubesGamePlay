@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-[ExecuteAlways]
 public class MousePositionInMesh : MonoBehaviour
 {
     private const float CURSOS_SIZE = .25f;
@@ -18,8 +17,8 @@ public class MousePositionInMesh : MonoBehaviour
         advancedBounds ? boundsDimensions : boundsScale.ToVector();
 
     protected Vector3 cursorPosition;
-    private Vector3 positiveCorner;
-    private Vector3 negativeCorner;
+    protected Vector3 positiveCorner;
+    protected Vector3 negativeCorner;
 
     private CharacterController con;
 
@@ -28,22 +27,20 @@ public class MousePositionInMesh : MonoBehaviour
 
     private void Update()
     {
-        UpdateBoundsScale();
-
         // Update the bounds position
+        UpdateBoundsScale();
         transform.localPosition = UpdateBoundsPosition();
-        Vector3 localScale = Vector3.one;
 
         // Create top-right outer bounds
         positiveCorner = transform.InverseTransformPoint(transform.position);
-        positiveCorner = positiveCorner.CreateBackTopRightCorner(localScale);
+        positiveCorner = positiveCorner.CreateBackTopRightCorner(Vector3.one);
 
         // Create bottom-left outer bounds
         negativeCorner = transform.InverseTransformPoint(transform.position);
-        negativeCorner = negativeCorner.CreateFrontBottomLeftCorner(localScale);
+        negativeCorner = negativeCorner.CreateFrontBottomLeftCorner(Vector3.one);
 
         // Calculate the cursor position
-        cursorPosition = GetMouseWorldspace(BoundsSize.z);
+        cursorPosition = GetMouseLocalspace(BoundsSize.z);
         cursorPosition = cursorPosition.Clamp(negativeCorner, positiveCorner);
     }
 
@@ -60,12 +57,14 @@ public class MousePositionInMesh : MonoBehaviour
                     (BoundsSize.y / 2) - (con.height / 2),
                     (BoundsSize.z / 2) + con.radius);
 
-    private Vector3 GetMouseWorldspace(float boundsSize)
+    private Vector3 GetMouseLocalspace(float boundsSize)
     {
         Vector3 vector = Input.mousePosition;
         vector.z = boundsSize / 2;
         vector = Camera.main.ScreenToWorldPoint(vector);
-        return transform.InverseTransformPoint(vector);
+        vector = transform.InverseTransformPoint(vector);
+        vector.z = 0;
+        return vector;
     }
 
     protected void OnDrawGizmos()
@@ -82,5 +81,8 @@ public class MousePositionInMesh : MonoBehaviour
 
         Gizmos.color = new Color(0, 1f, 0, 0.5f);
         Gizmos.DrawSphere(transform.TransformPoint(negativeCorner), CORNER_SIZE);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawSphere(transform.position, CORNER_SIZE);
     }
 }

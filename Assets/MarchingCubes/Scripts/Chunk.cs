@@ -35,8 +35,8 @@ public class Chunk : MonoBehaviour
     {
         //unityObject = Instantiate(gameObject, transform);
         unityObject = new GameObject("object");
-        unityObject.transform.parent = transform;
-        unityObject.transform.localPosition = Vector3.zero;
+        //unityObject.transform.parent = transform;
+        unityObject.transform.position = transform.position;
         Destroy(unityObject.GetComponent<Chunk>());
         SetUpObject(unityObject);
     }
