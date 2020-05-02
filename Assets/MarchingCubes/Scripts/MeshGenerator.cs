@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-public partial class MeshGenerator : MonoBehaviour
+public class MeshGenerator : MonoBehaviour
 {
     private const int THREADGROUPSIZE = 8;
 
@@ -22,8 +22,11 @@ public partial class MeshGenerator : MonoBehaviour
     private ComputeBuffer pointsBuffer;
     private ComputeBuffer triCountBuffer;
     public Vector3 startPosition;
+    public Vector3 lastRotation;
 
     private void Awake() => startPosition = transform.position;
+
+    private void Update() => lastRotation = transform.root.rotation.eulerAngles;
 
     public void RequestMeshUpdate(Chunk chunk)
     {
@@ -52,6 +55,11 @@ public partial class MeshGenerator : MonoBehaviour
         //                          chunk.position,
         //                          -chunk.offset,
         //                          pointSpacing);
+
+        Vector3 difference = lastRotation - transform.root.rotation.eulerAngles;
+        center = RotatePointAroundPivot(center, Vector3.zero, difference);
+        offset = RotatePointAroundPivot(offset, Vector3.zero, difference);
+
 
         densityGenerator.Generate(pointsBuffer,
                           numPointsPerAxis,
@@ -139,5 +147,12 @@ public partial class MeshGenerator : MonoBehaviour
         triangleBuffer.Release();
         pointsBuffer.Release();
         triCountBuffer.Release();
+    }
+
+    private Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Vector3 angles)
+    {
+        Vector3 dir = point - pivot;
+        dir = Quaternion.Euler(angles) * dir;
+        return dir + pivot;
     }
 }
