@@ -8,44 +8,41 @@ public class MoveBall : MousePositionInMesh
     public Chunk chunk;
 
     private bool ballSelected = false;
-    public Vector3 vector;
 
     private void Awake()
     {
         chunk.CreateObject();
-        meshGenerator.transform.parent.position = transform.position;
+        //meshGenerator.transform.parent.position = transform.position;
     }
 
     private void Update()
     {
-        chunk.position = Vector3.zero;
+        //if (Input.GetMouseButtonDown(0) && !ballSelected)
+        //{
+        //    chunk.CreateObject();
+        //    ballSelected = true;
+        //}
 
-        if (Input.GetMouseButtonDown(0) && !ballSelected)
-        {
-            chunk.CreateObject();
-            ballSelected = true;
-        }
+        //if (Input.GetMouseButton(0))
+        //{
+        //chunk.offset = Vector3.zero;
+        chunk.offset = cursorPosition;
+        chunk.boundSize = boundsScale;
 
-        if (Input.GetMouseButton(0))
-        {
-            //chunk.offset = Vector3.zero;
-            chunk.offset = cursorPosition;
-            chunk.boundSize = boundsScale;
+        meshGenerator.RequestMeshUpdate(chunk);
+        //}
 
-            meshGenerator.RequestMeshUpdate(chunk);
-        }
+        //if (Input.GetMouseButtonUp(0) && ballSelected)
+        //{
+        //    ballSelected = false;
 
-        if (Input.GetMouseButtonUp(0) && ballSelected)
-        {
-            ballSelected = false;
+        //    Vector3 direction = Camera.main.transform.forward;
 
-            Vector3 direction = Camera.main.transform.forward;
+        //    chunk.ReleaseObject();
 
-            chunk.ReleaseObject();
-
-            chunk.meshRigidbody.isKinematic = false;
-            chunk.meshRigidbody.AddForce(direction * FORCE);
-        }
+        //    chunk.meshRigidbody.isKinematic = false;
+        //    chunk.meshRigidbody.AddForce(direction * FORCE);
+        //}
     }
 }
 

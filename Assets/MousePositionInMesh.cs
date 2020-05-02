@@ -40,7 +40,7 @@ public class MousePositionInMesh : MonoBehaviour
         negativeCorner = negativeCorner.CreateFrontBottomLeftCorner(Vector3.one);
 
         // Calculate the cursor position
-        cursorPosition = GetMouseLocalspace(BoundsSize.z);
+        cursorPosition = GetMouseLocalSpace(BoundsSize.z);
         cursorPosition = cursorPosition.Clamp(negativeCorner, positiveCorner);
     }
 
@@ -57,7 +57,7 @@ public class MousePositionInMesh : MonoBehaviour
                     (BoundsSize.y / 2) - (con.height / 2),
                     (BoundsSize.z / 2) + con.radius);
 
-    private Vector3 GetMouseLocalspace(float boundsSize)
+    private Vector3 GetMouseLocalSpace(float boundsSize)
     {
         Vector3 vector = Input.mousePosition;
         vector.z = boundsSize / 2;

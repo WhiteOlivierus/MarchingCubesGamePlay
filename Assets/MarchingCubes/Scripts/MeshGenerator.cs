@@ -10,12 +10,20 @@ public partial class MeshGenerator : MonoBehaviour
 
     public ComputeShader shader;
 
+    public Vector3 center;
+    public Vector3 offset;
+    public float boundsSize;
+    public Vector3 bounds;
+
     [Range(2, 100)]
     private int numPointsPerAxis = 10;
 
     private ComputeBuffer triangleBuffer;
     private ComputeBuffer pointsBuffer;
     private ComputeBuffer triCountBuffer;
+    public Vector3 startPosition;
+
+    private void Awake() => startPosition = transform.position;
 
     public void RequestMeshUpdate(Chunk chunk)
     {
@@ -32,15 +40,26 @@ public partial class MeshGenerator : MonoBehaviour
             return;
 
         int numVoxelsPerAxis = numPointsPerAxis - 1;
-        float pointSpacing = chunk.boundSize / (numPointsPerAxis - 1);
+        //float pointSpacing = chunk.boundSize / (numPointsPerAxis - 1);
+        float pointSpacing = boundsSize / (numPointsPerAxis - 1);
+
+        Vector3 movementOffset = startPosition - transform.position;
+
+        //densityGenerator.Generate(pointsBuffer,
+        //                          numPointsPerAxis,
+        //                          chunk.boundSize,
+        //                          chunk.boundSize.ToVector(),
+        //                          chunk.position,
+        //                          -chunk.offset,
+        //                          pointSpacing);
 
         densityGenerator.Generate(pointsBuffer,
-                                  numPointsPerAxis,
-                                  chunk.boundSize,
-                                  chunk.boundSize.ToVector(),
-                                  chunk.position,
-                                  -chunk.offset,
-                                  pointSpacing);
+                          numPointsPerAxis,
+                          boundsSize,
+                          Vector3.zero,
+                          center - movementOffset,
+                          (-transform.parent.localPosition - (chunk.offset * boundsSize)) + movementOffset,
+                          pointSpacing);
 
         triangleBuffer.SetCounterValue(0);
         shader.SetBuffer(0, "points", pointsBuffer);
