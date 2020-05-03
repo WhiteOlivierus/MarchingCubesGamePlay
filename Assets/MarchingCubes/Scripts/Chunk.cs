@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+﻿using UnityEditor;
+using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
     public Material material;
     public PhysicMaterial physicsMaterial;
 
-    [HideInInspector] public Vector3 position;
     [HideInInspector] public float boundSize;
     [HideInInspector] public Vector3 offset;
 
@@ -33,9 +33,7 @@ public class Chunk : MonoBehaviour
 
     public void CreateObject()
     {
-        //unityObject = Instantiate(gameObject, transform);
         unityObject = new GameObject("object");
-        //unityObject.transform.parent = transform;
         unityObject.transform.position = transform.position;
         Destroy(unityObject.GetComponent<Chunk>());
         SetUpObject(unityObject);
@@ -43,6 +41,12 @@ public class Chunk : MonoBehaviour
 
     public void ReleaseObject()
     {
+        NormalSolver.RecalculateNormals(meshFilter.mesh, 90);
+
+        Unwrapping.GenerateSecondaryUVSet(meshFilter.mesh);
+
+        meshFilter.mesh.uv = meshFilter.mesh.uv2;
+
         CreateCollider(unityObject);
     }
 

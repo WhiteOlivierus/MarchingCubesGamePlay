@@ -1,32 +1,33 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class MeshGenerator : MonoBehaviour
 {
     private const int THREADGROUPSIZE = 8;
-
+    private const int NUMBER_OF_POINTS_PER_AXIS = 10;
+    private const int TRI_SIZE = 3; //Never toutch, you ever seen a trianlge with 2 or 4 points
     [Header("General Settings")]
     public DensityGenerator densityGenerator;
-
     public ComputeShader shader;
 
+    [Header("Positions")]
     public Vector3 center;
     public Vector3 offset;
     public float boundsSize;
     public Vector3 bounds;
 
-    [Range(2, 100)]
-    private int numPointsPerAxis = 10;
+    [Header("Offsets")]
+    public Vector3 startPosition;
+    public Vector3 lastRotation;
 
     private ComputeBuffer triangleBuffer;
     private ComputeBuffer pointsBuffer;
     private ComputeBuffer triCountBuffer;
-    public Vector3 startPosition;
-    public Vector3 lastRotation;
 
     private void Awake() => startPosition = transform.position;
 
     private void Update() => lastRotation = transform.root.rotation.eulerAngles;
+
+    private void OnDestroy() => ReleaseBuffers();
 
     public void RequestMeshUpdate(Chunk chunk)
     {
@@ -37,104 +38,94 @@ public class MeshGenerator : MonoBehaviour
         ReleaseBuffers();
     }
 
-    public void UpdateChunkMesh(Chunk chunk)
+    private void UpdateChunkMesh(Chunk chunk)
     {
         if (pointsBuffer == null)
             return;
 
-        int numVoxelsPerAxis = numPointsPerAxis - 1;
-        //float pointSpacing = chunk.boundSize / (numPointsPerAxis - 1);
-        float pointSpacing = boundsSize / (numPointsPerAxis - 1);
+        GenerateVoxels(chunk);
+
+        Triangle[] tris = GenerateMesh(NUMBER_OF_POINTS_PER_AXIS - 1);
+
+        UpdateMesh(chunk, tris);
+    }
+
+    private void GenerateVoxels(Chunk chunk)
+    {
+        float pointSpacing = boundsSize / (NUMBER_OF_POINTS_PER_AXIS - 1);
+
+        Vector3 rotation = lastRotation - transform.root.rotation.eulerAngles;
+        center = center.RotatePointAroundPivot(Vector3.zero, rotation);
 
         Vector3 movementOffset = startPosition - transform.position;
-
-        //densityGenerator.Generate(pointsBuffer,
-        //                          numPointsPerAxis,
-        //                          chunk.boundSize,
-        //                          chunk.boundSize.ToVector(),
-        //                          chunk.position,
-        //                          -chunk.offset,
-        //                          pointSpacing);
-
-        Vector3 difference = lastRotation - transform.root.rotation.eulerAngles;
-        center = RotatePointAroundPivot(center, Vector3.zero, difference);
-        offset = RotatePointAroundPivot(offset, Vector3.zero, difference);
-
+        offset = (-transform.parent.localPosition - (chunk.offset * chunk.boundSize)) + movementOffset;
 
         densityGenerator.Generate(pointsBuffer,
-                          numPointsPerAxis,
-                          boundsSize,
-                          Vector3.zero,
-                          center - movementOffset,
-                          (-transform.parent.localPosition - (chunk.offset * boundsSize)) + movementOffset,
-                          pointSpacing);
+                                  NUMBER_OF_POINTS_PER_AXIS,
+                                  boundsSize,
+                                  Vector3.zero,
+                                  center - movementOffset,
+                                  offset,
+                                  pointSpacing);
+    }
 
+    private Triangle[] GenerateMesh(int numVoxelsPerAxis)
+    {
         triangleBuffer.SetCounterValue(0);
+
         shader.SetBuffer(0, "points", pointsBuffer);
         shader.SetBuffer(0, "triangles", triangleBuffer);
-        shader.SetInt("numPointsPerAxis", numPointsPerAxis);
+        shader.SetInt("numPointsPerAxis", NUMBER_OF_POINTS_PER_AXIS);
         shader.SetFloat("isoLevel", 1);
 
         int numThreadsPerAxis = Mathf.CeilToInt(numVoxelsPerAxis / (float)THREADGROUPSIZE);
+
         shader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 
         ComputeBuffer.CopyCount(triangleBuffer, triCountBuffer, 0);
+
         int[] triCountArray = { 0 };
         triCountBuffer.GetData(triCountArray);
-        int numTris = triCountArray[0];
+        Triangle[] tris = new Triangle[(triCountArray[0])];
+        triangleBuffer.GetData(tris, 0, 0, triCountArray[0]);
 
-        Triangle[] tris = new Triangle[numTris];
-        triangleBuffer.GetData(tris, 0, 0, numTris);
-
-        UpdateMesh(chunk, numTris, tris);
+        return tris;
     }
 
-    private static void UpdateMesh(Chunk chunk, int numTris, Triangle[] tris)
+    private void UpdateMesh(Chunk chunk, Triangle[] tris)
     {
-        Mesh mesh = chunk.meshFilter.mesh;
-
-        if (mesh == null)
+        if (chunk.meshFilter.mesh == null || tris.Length == 0)
             return;
 
-        mesh.Clear();
+        chunk.meshFilter.mesh.Clear();
 
-        Vector3[] vertices = new Vector3[numTris * 3];
-        int[] meshTriangles = new int[numTris * 3];
+        int size = tris.Length * TRI_SIZE;
+        Vector3[] vertices = new Vector3[size];
+        int[] meshTriangles = new int[size];
 
-        for (int i = 0; i < numTris; i++)
-            for (int k = 0; k < 3; k++)
+        for (int i = 0; i < tris.Length; i++)
+            for (int k = 0; k < TRI_SIZE; k++)
             {
-                meshTriangles[i * 3 + k] = i * 3 + k;
-                vertices[i * 3 + k] = tris[i][k];
+                meshTriangles[i * TRI_SIZE + k] = i * TRI_SIZE + k;
+                vertices[i * TRI_SIZE + k] = tris[i][k];
             }
 
-        mesh.vertices = vertices;
-        mesh.triangles = meshTriangles;
+        chunk.meshFilter.mesh.vertices = vertices;
+        chunk.meshFilter.mesh.triangles = meshTriangles;
 
-        if (vertices.Length == 0)
-            return;
-
-        //NormalSolver.RecalculateNormals(mesh, 90);
-
-        //Unwrapping.GenerateSecondaryUVSet(mesh);
-        //mesh.uv = mesh.uv2;
-
-        chunk.meshFilter.mesh = mesh;
+        chunk.meshFilter.mesh = chunk.meshFilter.mesh;
     }
-
-    private void OnDestroy() =>
-        ReleaseBuffers();
 
     private void CreateBuffers()
     {
-        int numPoints = numPointsPerAxis * numPointsPerAxis * numPointsPerAxis;
-        int numVoxelsPerAxis = numPointsPerAxis - 1;
+        int numPoints = NUMBER_OF_POINTS_PER_AXIS * NUMBER_OF_POINTS_PER_AXIS * NUMBER_OF_POINTS_PER_AXIS;
+        int numVoxelsPerAxis = NUMBER_OF_POINTS_PER_AXIS - 1;
         int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
         int maxTriangleCount = numVoxels * 5;
 
         ReleaseBuffers();
 
-        triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
+        triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * TRI_SIZE * TRI_SIZE, ComputeBufferType.Append);
         pointsBuffer = new ComputeBuffer(numPoints, sizeof(float) * 4);
         triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
     }
@@ -147,12 +138,5 @@ public class MeshGenerator : MonoBehaviour
         triangleBuffer.Release();
         pointsBuffer.Release();
         triCountBuffer.Release();
-    }
-
-    private Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Vector3 angles)
-    {
-        Vector3 dir = point - pivot;
-        dir = Quaternion.Euler(angles) * dir;
-        return dir + pivot;
     }
 }

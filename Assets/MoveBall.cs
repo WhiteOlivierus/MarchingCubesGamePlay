@@ -14,31 +14,36 @@ public class MoveBall : MousePositionInMesh
     private void Update()
     {
         if (Input.GetMouseButtonDown(0) && !ballSelected)
-        {
-            chunk.CreateObject();
-            ballSelected = true;
-        }
+            BeginInput();
+        else if (Input.GetMouseButton(0))
+            HoldInput();
+        else if (Input.GetMouseButtonUp(0) && ballSelected)
+            EndInput();
+    }
 
-        if (Input.GetMouseButton(0))
-        {
-            chunk.offset = Vector3.zero;
-            chunk.offset = cursorPosition;
-            chunk.boundSize = boundsScale;
+    private void BeginInput()
+    {
+        chunk.CreateObject();
 
-            meshGenerator.RequestMeshUpdate(chunk);
-        }
+        ballSelected = true;
+    }
 
-        if (Input.GetMouseButtonUp(0) && ballSelected)
-        {
-            ballSelected = false;
+    private void HoldInput()
+    {
+        chunk.offset = cursorPosition;
+        chunk.boundSize = boundsScale;
 
-            Vector3 direction = Camera.main.transform.forward;
+        meshGenerator.RequestMeshUpdate(chunk);
+    }
 
-            chunk.ReleaseObject();
+    private void EndInput()
+    {
+        chunk.ReleaseObject();
 
-            chunk.meshRigidbody.isKinematic = false;
-            chunk.meshRigidbody.AddForce(direction * FORCE);
-        }
+        chunk.meshRigidbody.isKinematic = false;
+        chunk.meshRigidbody.AddForce(Camera.main.transform.forward * FORCE);
+
+        ballSelected = false;
     }
 }
 

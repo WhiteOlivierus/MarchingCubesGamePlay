@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+
+#pragma warning disable 618, 649
 namespace MetaBall
 {
     struct GPUPositions

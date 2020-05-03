@@ -1,12 +1,13 @@
-﻿using UnityEngine;
-
-public static class GameObjectExtension
+﻿namespace UnityEngine
 {
-    public static T CreateComponent<T>(this GameObject unityObject) where T : Component
+    public static class GameObjectExtension
     {
-        T parameter = unityObject.GetComponent<T>();
-        if (parameter == null)
-            return unityObject.AddComponent<T>();
-        return parameter;
+        public static T CreateComponent<T>(this GameObject unityObject) where T : Component
+        {
+            T parameter = unityObject.GetComponent<T>();
+            if (parameter == null)
+                return unityObject.AddComponent<T>();
+            return parameter;
+        }
     }
 }
