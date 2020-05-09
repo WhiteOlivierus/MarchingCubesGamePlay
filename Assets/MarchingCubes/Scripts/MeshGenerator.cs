@@ -94,16 +94,17 @@ public class MeshGenerator : MonoBehaviour
 
     private void UpdateMesh(Chunk chunk, Triangle[] tris)
     {
-        if (chunk.meshFilter.mesh == null || tris.Length == 0)
+        int amountOfTris = tris.Length;
+        if (chunk.meshFilter.mesh == null || amountOfTris == 0)
             return;
 
         chunk.meshFilter.mesh.Clear();
 
-        int size = tris.Length * TRI_SIZE;
+        int size = amountOfTris * TRI_SIZE;
         Vector3[] vertices = new Vector3[size];
         int[] meshTriangles = new int[size];
 
-        for (int i = 0; i < tris.Length; i++)
+        for (int i = 0; i < amountOfTris; i++)
             for (int k = 0; k < TRI_SIZE; k++)
             {
                 meshTriangles[i * TRI_SIZE + k] = i * TRI_SIZE + k;

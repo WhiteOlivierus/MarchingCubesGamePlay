@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
@@ -43,9 +42,7 @@ public class Chunk : MonoBehaviour
     {
         NormalSolver.RecalculateNormals(meshFilter.mesh, 90);
 
-        Unwrapping.GenerateSecondaryUVSet(meshFilter.mesh);
-
-        meshFilter.mesh.uv = meshFilter.mesh.uv2;
+        meshFilter.mesh.uv = UvCalculator.CalculateUVs(meshFilter.mesh.vertices);
 
         CreateCollider(unityObject);
     }
